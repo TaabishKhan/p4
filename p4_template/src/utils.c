@@ -99,7 +99,8 @@ void init(int port) {
 int accept_connection(void) {
 
    //TODO: create a sockaddr_in struct to hold the address of the new connection
-  
+   struct sockaddr_in client_addr;
+   socklen_t client_len = sizeof(client_addr);
    
    /**********************************************
     * IMPORTANT!
@@ -109,14 +110,32 @@ int accept_connection(void) {
    
    
    // TODO: Aquire the mutex lock
-
+   if(pthread_mutex_lock(&socket_mutex) != 0) {
+    perror("Failed to acquire mutex lock");
+    return -1; // Return a negative value to indicate an error
+   }
    // TODO: Accept a new connection on the passive socket and save the fd to newsock
-
+   int newsock = accept(master_fd, (struct sockaddr*)&client_addr, &client_len);
+   if (newsock < 0) {
+      perror("Accept failed");
+      pthread_mutex_unlock(&socket_mutex); // Ensure the mutex is unlocked even on failure
+      return -1; // Return a negative value to indicate an error
+   }
    // TODO: Release the mutex lock
-
+   if (pthread_mutex_unlock(&socket_mutex) != 0) {
+    perror("Failed to release mutex lock");
+    close(newsock); // Close the socket if unlocking fails
+    return -1; // Return a negative value to indicate an error
+   }
 
    // TODO: Return the file descriptor for the new client connection
-   
+   printf("UTILS.O: Connection accepted from %s:%d\n",
+   inet_ntoa(client_addr.sin_addr),
+   ntohs(client_addr.sin_port));
+   fflush(stdout);
+
+   return newsock;
+  
 }
 
 
