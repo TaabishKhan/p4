@@ -155,9 +155,10 @@ int send_file_to_client(int socket, char * buffer, int size)
 
 
     //TODO: send the file data
+
   
     //TODO: return 0 on success, -1 on failure
-
+    return 0;
 }
 
 
@@ -172,6 +173,10 @@ char * get_request_server(int fd, size_t *filelength)
     //TODO: create a packet_t to hold the packet data
  
     //TODO: receive the response packet
+    if (recv(fd, filelength, sizeof(size_t), 0) <= 0) {
+        perror("Failed to receive file size");
+        return NULL;
+    }
   
     //TODO: get the size of the image from the packet
 
@@ -197,14 +202,29 @@ char * get_request_server(int fd, size_t *filelength)
 int setup_connection(int port)
 {
     //TODO: create a sockaddr_in struct to hold the address of the server   
+    int sockfd;
+    struct sockaddr_in server_addr;
 
     //TODO: create a socket and save the file descriptor to sockfd
+    if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+      perror("Socket creation failed");
+      exit(EXIT_FAILURE);
+    }
    
     //TODO: assign IP, PORT to the sockaddr_in struct
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    server_addr.sin_port = htons(port);
 
     //TODO: connect to the server
+    if (connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
+      perror("Connection to server failed");
+      close(sockfd);
+      exit(EXIT_FAILURE);
+    }
    
     //TODO: return the file descriptor for the socket
+    return sockfd;
 }
 
 
@@ -218,12 +238,24 @@ int setup_connection(int port)
 int send_file_to_server(int socket, FILE *file, int size) 
 {
     //TODO: send the file size packet
-   
+    if (send(socket, &size, sizeof(size), 0) < 0) {
+      perror("Failed to send file size");
+      return -1;
+    }
 
     //TODO: send the file data
+    char buffer[1024];
+    int bytes_read;
+    while ((bytes_read = fread(buffer, 1, sizeof(buffer), file)) > 0) {
+        if (send(socket, buffer, bytes_read, 0) < 0) {
+            perror("Failed to send file data");
+            return -1;
+        }
+    }
    
 
     // TODO: return 0 on success, -1 on failure
+    return 0;
    
 }
 
@@ -236,9 +268,15 @@ int send_file_to_server(int socket, FILE *file, int size)
 int receive_file_from_server(int socket, const char *filename) 
 {
     //TODO: create a buffer to hold the file data
+    char buffer[1024];
     
 
     //TODO: open the file for writing binary data
+    FILE *file = fopen(filename, "wb");
+    if (!file) {
+        perror("Failed to open write file");
+        return -1;
+    }
    
     
    //TODO: create a packet_t to hold the packet data
@@ -253,5 +291,6 @@ int receive_file_from_server(int socket, const char *filename)
    //TODO: recieve the file data and write it to the file
     
     //TODO: return 0 on success, -1 on failure
+    return 0;
 }
 
