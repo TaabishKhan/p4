@@ -194,11 +194,28 @@ char * get_request_server(int fd, size_t *filelength)
     }
   
     //TODO: get the size of the image from the packet
+    *filelength = packet.size;
 
     //TODO: recieve the file data and save into a buffer variable.
+    char *buffer = (char *)malloc(*filelength);
+    if (!buffer) {
+        perror("Failed to allocate memory for file data");
+        return NULL;
+    }
+
+    size_t bytes_received = 0;
+    while (bytes_received < *filelength) {
+      ssize_t result = recv(fd, buffer + bytes_received, *filelength - bytes_received, 0);
+      if (result <= 0) {
+          perror("Failed to receive file data");
+          free(buffer);
+          return NULL;
+      }
+      bytes_received += result;
+    }
 
     //TODO: return the buffer
-
+    return buffer;
 }
 
 
