@@ -218,7 +218,6 @@ char * get_request_server(int fd, size_t *filelength)
     return buffer;
 }
 
-
 /*
 ################################################
 ##############Client Functions##################
