@@ -148,17 +148,30 @@ int accept_connection(void) {
 ************************************************/
 int send_file_to_client(int socket, char * buffer, int size) 
 {
-    //TODO: create a packet_t to hold the packet data
- 
+    packet_t packet;
+    packet.size = size;
 
-    //TODO: send the file size packet
+    // Send the packet with the file size first and error check
+    if (send (socket, &packet, sizeof(packet_t), 0) < 0) {
+        perror("Failed to send file size packet");
+        return -1; // Failed Transmission
+    }
 
+    int bytes_sent = 0;
+    // Loop for sending data
+    while (bytes_sent < size) {
+        int result = send(socket, buffer + bytes_sent, size - bytes_sent, 0);
 
-    //TODO: send the file data
+        // Error check the last sent file data
+        if (result < 0) {
+            perror("Failed to send file data");
+            return -1; // Failed transmission
+        }
 
-  
-    //TODO: return 0 on success, -1 on failure
-    return 0;
+        // Increment sent counter
+        bytes_sent += result;
+    }
+    return 0; // Successful transmission
 }
 
 
@@ -171,6 +184,8 @@ int send_file_to_client(int socket, char * buffer, int size)
 char * get_request_server(int fd, size_t *filelength)
 {
     //TODO: create a packet_t to hold the packet data
+    packet_t packet;
+    packet.size = *filelength;
  
     //TODO: receive the response packet
     if (recv(fd, filelength, sizeof(size_t), 0) <= 0) {
