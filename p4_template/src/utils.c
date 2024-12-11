@@ -282,24 +282,24 @@ int send_file_to_server(int socket, FILE *file, int size)
 ************************************************/
 int receive_file_from_server(int socket, const char *filename) 
 {
-    //TODO: create a buffer to hold the file data
-    char buffer[1024];
+  // Create a buffer to hold the file data
+  char buffer[1024];
     
 
-    //TODO: open the file for writing binary data
-    FILE *file = fopen(filename, "wb");
+  // Open the file for writing binary data
+  FILE *file = fopen(filename, "wb");
 
-    // Error checking
-    if (!file) {
-        perror("Failed to open write file");
-        return -1;
-    }
+  // Error checking
+  if (!file) {
+    perror("Failed to open write file");
+    return -1;
+  }
    
     
-   //TODO: create a packet_t to hold the packet data
-   packet_t packet;
+  // Create a packet_t to hold the packet data
+  packet_t packet;
     
-   //TODO: receive the response packet
+  // Receive the response packet
   if (recv (socket, &packet.size, sizeof(packet.size), 0) <= 0){
 
     // Error
@@ -311,11 +311,30 @@ int receive_file_from_server(int socket, const char *filename)
   //TODO: get the size of the image from the packet
   size_t total_bytes_received = 0;
   size_t file_size = packet.size;
-   
+  
+  //TODO: recieve the file data and write it to the file
+  while (total_bytes_received < file_size){
 
-   //TODO: recieve the file data and write it to the file
+    int bytes_received = recv (socket, buffer, sizeof(buffer), 0);
     
-    //TODO: return 0 on success, -1 on failure
-    return 0;
+    if (bytes_received <= 0) {
+      // Error checking
+      perror("Failed to receive file data");
+      fclose(file);
+      return -1;
+    }
+
+    if (fwrite (buffer, 1 , bytes_received, file) != (size_t) bytes_received) {
+      // Error checking
+      perror("Failed to write data to file");
+      fclose(file);
+      return -1;
+    }
+    total_bytes_received += bytes_received;
+  }
+
+
+  //TODO: return 0 on success, -1 on failure
+  return 0;
 }
 
