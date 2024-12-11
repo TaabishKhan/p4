@@ -181,40 +181,38 @@ int send_file_to_client(int socket, char * buffer, int size)
    - filelength is a pointer to a size_t variable that will be set to the length of the file
    - returns a pointer to the file data
 ************************************************/
-char * get_request_server(int fd, size_t *filelength)
-{
-    //TODO: create a packet_t to hold the packet data
-    packet_t packet;
-    packet.size = *filelength;
- 
-    //TODO: receive the response packet
-    if (recv(fd, filelength, sizeof(size_t), 0) <= 0) {
-        perror("Failed to receive file size");
+
+char *get_request_server(int fd, size_t *filelength) {
+    if (!filelength) {
+        fprintf(stderr, "Invalid filelength pointer\n");
         return NULL;
     }
-  
-    //TODO: get the size of the image from the packet
-    *filelength = packet.size;
 
-    //TODO: recieve the file data and save into a buffer variable.
-    char *buffer = (char *)malloc(*filelength);
+    uint32_t size;
+    ssize_t bytes_received = recv(fd, &size, sizeof(uint32_t), 0);
+    if (bytes_received <= 0) {
+        if (bytes_received == 0) {
+            fprintf(stderr, "Client disconnected\n");
+        } else {
+            perror("recv");
+        }
+        return NULL;
+    }
+
+    *filelength = size;
+    char *buffer = malloc(size);
     if (!buffer) {
-        perror("Failed to allocate memory for file data");
+        perror("malloc");
         return NULL;
     }
 
-    size_t bytes_received = 0;
-    while (bytes_received < *filelength) {
-      ssize_t result = recv(fd, buffer + bytes_received, *filelength - bytes_received, 0);
-      if (result <= 0) {
-          perror("Failed to receive file data");
-          free(buffer);
-          return NULL;
-      }
-      bytes_received += result;
+    bytes_received = recv(fd, buffer, size, 0);
+    if (bytes_received < 0) {
+        perror("recv");
+        free(buffer);
+        return NULL;
     }
 
-    //TODO: return the buffer
     return buffer;
 }
 
@@ -266,28 +264,38 @@ int setup_connection(int port)
    - size is the size of the file you want to send
    - returns 0 on success, -1 on failure
 ************************************************/
-int send_file_to_server(int socket, FILE *file, int size) 
-{
-    //TODO: send the file size packet
-    if (send(socket, &size, sizeof(size), 0) < 0) {
-      perror("Failed to send file size");
-      return -1;
+int send_file_to_server(int sockfd, FILE *file, int size) {
+    if (!file) {
+        fprintf(stderr, "Invalid file pointer\n");
+        return -1;
     }
 
-    //TODO: send the file data
-    char buffer[1024];
-    int bytes_read;
-    while ((bytes_read = fread(buffer, 1, sizeof(buffer), file)) > 0) {
-        if (send(socket, buffer, bytes_read, 0) < 0) {
-            perror("Failed to send file data");
+    char buffer[BUFFER_SIZE];
+    size_t total_sent = 0;
+
+    while (total_sent < size) {
+        size_t to_read = (size - total_sent) < BUFFER_SIZE ? (size - total_sent) : BUFFER_SIZE;
+        size_t bytes_read = fread(buffer, 1, to_read, file);
+
+        if (bytes_read == 0 && ferror(file)) {
+            perror("fread");
             return -1;
         }
-    }
-   
 
-    // TODO: return 0 on success, -1 on failure
+        size_t bytes_sent = 0;
+        while (bytes_sent < bytes_read) {
+            ssize_t sent = send(sockfd, buffer + bytes_sent, bytes_read - bytes_sent, 0);
+            if (sent < 0) {
+                perror("send");
+                return -1;
+            }
+            bytes_sent += sent;
+        }
+
+        total_sent += bytes_read;
+    }
+
     return 0;
-   
 }
 
 /**********************************************
@@ -353,4 +361,3 @@ int receive_file_from_server(int socket, const char *filename)
   //TODO: return 0 on success, -1 on failure
   return 0;
 }
-

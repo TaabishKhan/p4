@@ -5,6 +5,7 @@ SRCDIR=src
 INCDIR=include
 LIBDIR=lib
 OUTPUTDIR=output
+IMAGEDIR=$(OUTPUTDIR)/img
 
 all: outdir utils server client
 
@@ -24,3 +25,5 @@ clean:
 
 outdir:
 	mkdir -p $(OUTPUTDIR)
+	mkdir -p $(IMAGEDIR)
+
