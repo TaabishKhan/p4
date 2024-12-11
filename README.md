@@ -37,6 +37,11 @@ Example:
 
     8000: Connects to the server on port 8000.
 
+Example:
+Command Line
+$ ./server 8000 database 50 50 20
+$ ./client img 8000 output
+
 File Descriptions
 
     server.c: Implements server functionalities, including initializing the server, accepting connections, and transmitting files to clients.
@@ -62,3 +67,13 @@ Group Contributions
     Taabish Khan: Designed thread-safe mechanisms for connection handling using mutex locks. Implemented core server functions for initialization and client communication.
     Omar Yasin: Optimized data transmission functions for efficient file transfers. Debugged and resolved issues in socket communication.
     Michael Sharp: Handled file input/output operations, ensuring robust error handling and memory management for file buffers.
+
+
+To parallelize individual requests in your program, you can create a new thread for each incoming client connection. The server will:
+
+    Accept a connection: Wait for a client to connect using a loop.
+    Create a thread: For each accepted connection, spawn a new thread to handle the request.
+    Process the request: The thread will handle all operations for the specific client (e.g., reading data, sending responses).
+    Close the connection: Once the request is complete, the thread will close the client connection and exit.
+
+This approach ensures that multiple client requests can be processed simultaneously, improving efficiency and responsiveness.

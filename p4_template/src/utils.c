@@ -288,6 +288,8 @@ int receive_file_from_server(int socket, const char *filename)
 
     //TODO: open the file for writing binary data
     FILE *file = fopen(filename, "wb");
+
+    // Error checking
     if (!file) {
         perror("Failed to open write file");
         return -1;
@@ -295,12 +297,20 @@ int receive_file_from_server(int socket, const char *filename)
    
     
    //TODO: create a packet_t to hold the packet data
+   packet_t packet;
     
    //TODO: receive the response packet
-  
+  if (recv (socket, &packet.size, sizeof(packet.size), 0) <= 0){
 
-    //TODO: get the size of the image from the packet
-   
+    // Error
+    perror("Failed to receive the file's size");
+    fclose(file);
+    return -1;
+  }
+
+  //TODO: get the size of the image from the packet
+  size_t total_bytes_received = 0;
+  size_t file_size = packet.size;
    
 
    //TODO: recieve the file data and write it to the file
